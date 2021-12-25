@@ -12,7 +12,7 @@ im_size = 416
 conff = 0.1
 video = "outpy.avi"
 
-control_distance = int(0.15*im_size)
+control_distance = int(0.2*im_size)
 
 #Load YOLO
 net = cv2.dnn.readNet(weights, cfg)
@@ -22,6 +22,11 @@ layer_names = net.getLayerNames()
 outputlayers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
 colors= np.random.uniform(0,255,size=(len(classes),3))
+
+#For video
+# videodims = (im_size,im_size)
+# fourcc = cv2.VideoWriter_fourcc(*'avc1')    
+# videoP = cv2.VideoWriter("test.mp4",fourcc, 10,videodims)
 
 #Loading image
 cap=cv2.VideoCapture(video) #0 for 1st webcam
@@ -35,15 +40,15 @@ def is_intersection(face_boxes, cup_boxes, bottle_boxes):
             xf, yf = face_boxes[i]
             xc, yc = cup_boxes[j]
             distance = int(((xf-xc)**2+(yf-yc)**2)**(0.5))
-            if distance > control_distance:
+            if distance < control_distance:
                 return True
 
     for i in range(len(face_boxes)):
-        for j in range(len(cup_boxes)):
+        for j in range(len(bottle_boxes)):
             xf, yf = face_boxes[i]
             xb, yb = bottle_boxes[j]
             distance = int(((xf-xb)**2+(yf-yb)**2)**(0.5))
-            if distance > control_distance:
+            if distance < control_distance:
                 return True
 
     return False
@@ -103,7 +108,7 @@ while True:
                 elif class_id == 2:
                     bottle_boxes.append([center_x, center_y])
 
-    indexes = cv2.dnn.NMSBoxes(boxes,confidences,0.4,0.6)
+    indexes = cv2.dnn.NMSBoxes(boxes,confidences,conff,0.6)
 
     for i in range(len(boxes)):
         if i in indexes:
@@ -128,6 +133,10 @@ while True:
         cv2.putText(frame,"NOT DRINK",(10,100),font,2,(0,255,0),1)
 
     cv2.imshow("Image",frame)
+
+    # imtemp = frame.copy()
+    # videoP.write(cv2.cvtColor(np.array(imtemp), cv2.COLOR_RGB2BGR))
+
     key = cv2.waitKey(1) #wait 1ms the loop will start again and we will process the next frame
     
     if key == 27: #esc key stops the process
